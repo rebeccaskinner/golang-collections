@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/rebeccaskinner/golang-collections/src/linkedlist"
+	"github.com/rebeccaskinner/golang-collections/src/list"
 )
 
 func main() {
