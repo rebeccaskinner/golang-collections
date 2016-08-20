@@ -1,6 +1,4 @@
-package main
-
-import "fmt"
+package list
 
 type unit struct{}
 
@@ -98,12 +96,4 @@ func Seq(l list) {
 		Head(l)
 		l = Tail(l)
 	}
-}
-
-func main() {
-	f := func(i interface{}) {
-		fmt.Println(i)
-	}
-	l := Cons(3, Cons(2, Cons(1, Return(0))))
-	MapM(f, l)
 }
