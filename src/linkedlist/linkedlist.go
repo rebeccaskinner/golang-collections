@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 type unit struct{}
 
@@ -14,32 +11,32 @@ type listReturn struct {
 
 type list interface{}
 
-func mzero() list {
+func Mzero() list {
 	return unit{}
 }
 
-func mreturn(i interface{}) list {
-	return mreturnf(func() interface{} { return i })
+func Return(i interface{}) list {
+	return Returnf(func() interface{} { return i })
 }
 
-func cons(i interface{}, l list) list {
-	return consf(func() interface{} { return i }, l)
+func Cons(i interface{}, l list) list {
+	return Consf(func() interface{} { return i }, l)
 }
 
-func consf(f func() interface{}, l list) list {
+func Consf(f func() interface{}, l list) list {
 	if l == nil {
-		l = mzero()
+		l = Mzero()
 	}
 	return [2]interface{}{f, func() list { return l }}
 }
 
-func mreturnf(f func() interface{}) list {
-	return consf(f, mzero())
+func Returnf(f func() interface{}) list {
+	return Consf(f, Mzero())
 }
 
-func head(l list) interface{} {
+func Head(l list) interface{} {
 	if l == nil {
-		l = mzero()
+		l = Mzero()
 	}
 	if _, ok := l.(unit); ok {
 		return unit{}
@@ -48,9 +45,9 @@ func head(l list) interface{} {
 	return lf()
 }
 
-func next(l list) list {
+func Tail(l list) list {
 	if l == nil {
-		l = mzero()
+		l = Mzero()
 	}
 	if _, ok := l.(uint); ok {
 		return unit{}
@@ -60,9 +57,9 @@ func next(l list) list {
 	return f()
 }
 
-func end(l list) bool {
+func IsEmpty(l list) bool {
 	if l == nil {
-		l = mzero()
+		l = Mzero()
 	}
 	_, ok := l.(unit)
 	if ok {
@@ -75,9 +72,9 @@ func end(l list) bool {
 	return false
 }
 
-func listmap(f func(interface{}) interface{}, l list) list {
-	if end(l) {
-		return mzero()
+func Map(f func(interface{}) interface{}, l list) list {
+	if IsEmpty(l) {
+		return Mzero()
 	}
 	elem := l.([2]interface{})
 	valFunc := elem[0].(func() interface{})
@@ -85,36 +82,28 @@ func listmap(f func(interface{}) interface{}, l list) list {
 	mapperFunc := func() interface{} {
 		return f(valFunc())
 	}
-	return consf(mapperFunc, listmap(f, next()))
+	return Consf(mapperFunc, Map(f, next()))
 }
 
-func listmapM(f func(interface{}), l list) {
+func MapM(f func(interface{}), l list) {
 	adapter := func(i interface{}) interface{} {
 		f(i)
 		return nil
 	}
-	listmap(adapter, l)
+	Seq(Map(adapter, l))
 }
 
-func seq(l list) {
-	for !end(l) {
-		head(l)
-		l = next(l)
+func Seq(l list) {
+	for !IsEmpty(l) {
+		Head(l)
+		l = Tail(l)
 	}
 }
 
 func main() {
-	f := func(i interface{}) interface{} {
+	f := func(i interface{}) {
 		fmt.Println(i)
-		return nil
 	}
-
-	slowValue := func() interface{} {
-		time.Sleep(5 * time.Second)
-		return 1
-	}
-
-	l := cons(3, cons(2, consf(slowValue, mreturn(0))))
-	l = listmap(f, l)
-	seq(l)
+	l := Cons(3, Cons(2, Cons(1, Return(0))))
+	MapM(f, l)
 }
