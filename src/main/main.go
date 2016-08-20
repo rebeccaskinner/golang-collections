@@ -10,6 +10,6 @@ func main() {
 	f := func(i interface{}) {
 		fmt.Println(i)
 	}
-	l := list.Cons(3, list.Cons(2, list.Cons(1, list.Return(0))))
+	l := list.Reverse(list.Cons(3, list.Cons(2, list.Cons(1, list.Return(0)))))
 	list.MapM(f, l)
 }

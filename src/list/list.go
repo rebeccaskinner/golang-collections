@@ -1,5 +1,9 @@
 package list
 
+import "errors"
+
+var ErrOutOfRange = errors.New("out of range")
+
 type unit struct{}
 
 type listReturn struct {
@@ -55,6 +59,10 @@ func Tail(l list) list {
 	return f()
 }
 
+func HdTail(l list) (interface{}, list) {
+	return Head(l), Tail(l)
+}
+
 func IsEmpty(l list) bool {
 	if l == nil {
 		l = Mzero()
@@ -96,4 +104,37 @@ func Seq(l list) {
 		Head(l)
 		l = Tail(l)
 	}
+}
+
+func Foldl(f func(interface{}, interface{}) interface{}, val interface{}, l list) interface{} {
+	if IsEmpty(l) {
+		return val
+	}
+	hd, tl := HdTail(l)
+	return Foldl(f, f(val, hd), tl)
+}
+
+func Foldl1(f func(interface{}, interface{}) interface{}, l list) interface{} {
+	hd, tl := HdTail(l)
+	return Foldl(f, hd, tl)
+}
+
+func Index(idx uint, l list) interface{} {
+	for cur := uint(0); cur < idx; cur++ {
+		if IsEmpty(l) {
+			return Mzero()
+		}
+		l = Tail(l)
+	}
+	if IsEmpty(l) {
+		return Mzero()
+	}
+	return Head(l)
+}
+
+func Reverse(l list) list {
+	foldFunc := func(carry, elem interface{}) interface{} {
+		return Cons(elem, carry)
+	}
+	return Foldl(foldFunc, Mzero(), l).(list)
 }
