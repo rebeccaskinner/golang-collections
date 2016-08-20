@@ -11,32 +11,32 @@ type listReturn struct {
 	unitVal *unit
 }
 
-type list interface{}
+type List interface{}
 
-func Mzero() list {
+func Mzero() List {
 	return unit{}
 }
 
-func Return(i interface{}) list {
+func Return(i interface{}) List {
 	return Returnf(func() interface{} { return i })
 }
 
-func Cons(i interface{}, l list) list {
+func Cons(i interface{}, l List) List {
 	return Consf(func() interface{} { return i }, l)
 }
 
-func Consf(f func() interface{}, l list) list {
+func Consf(f func() interface{}, l List) List {
 	if l == nil {
 		l = Mzero()
 	}
-	return [2]interface{}{f, func() list { return l }}
+	return [2]interface{}{f, func() List { return l }}
 }
 
-func Returnf(f func() interface{}) list {
+func Returnf(f func() interface{}) List {
 	return Consf(f, Mzero())
 }
 
-func Head(l list) interface{} {
+func Head(l List) interface{} {
 	if l == nil {
 		l = Mzero()
 	}
@@ -47,7 +47,7 @@ func Head(l list) interface{} {
 	return lf()
 }
 
-func Tail(l list) list {
+func Tail(l List) List {
 	if l == nil {
 		l = Mzero()
 	}
@@ -55,15 +55,15 @@ func Tail(l list) list {
 		return unit{}
 	}
 	ll := l.([2]interface{})
-	f := ll[1].(func() list)
+	f := ll[1].(func() List)
 	return f()
 }
 
-func HdTail(l list) (interface{}, list) {
+func HdTail(l List) (interface{}, List) {
 	return Head(l), Tail(l)
 }
 
-func IsEmpty(l list) bool {
+func IsEmpty(l List) bool {
 	if l == nil {
 		l = Mzero()
 	}
@@ -78,20 +78,20 @@ func IsEmpty(l list) bool {
 	return false
 }
 
-func Map(f func(interface{}) interface{}, l list) list {
+func Map(f func(interface{}) interface{}, l List) List {
 	if IsEmpty(l) {
 		return Mzero()
 	}
 	elem := l.([2]interface{})
 	valFunc := elem[0].(func() interface{})
-	next := elem[1].(func() list)
+	next := elem[1].(func() List)
 	mapperFunc := func() interface{} {
 		return f(valFunc())
 	}
 	return Consf(mapperFunc, Map(f, next()))
 }
 
-func MapM(f func(interface{}), l list) {
+func MapM(f func(interface{}), l List) {
 	adapter := func(i interface{}) interface{} {
 		f(i)
 		return nil
@@ -99,14 +99,14 @@ func MapM(f func(interface{}), l list) {
 	Seq(Map(adapter, l))
 }
 
-func Seq(l list) {
+func Seq(l List) {
 	for !IsEmpty(l) {
 		Head(l)
 		l = Tail(l)
 	}
 }
 
-func Foldl(f func(interface{}, interface{}) interface{}, val interface{}, l list) interface{} {
+func Foldl(f func(interface{}, interface{}) interface{}, val interface{}, l List) interface{} {
 	if IsEmpty(l) {
 		return val
 	}
@@ -114,12 +114,20 @@ func Foldl(f func(interface{}, interface{}) interface{}, val interface{}, l list
 	return Foldl(f, f(val, hd), tl)
 }
 
-func Foldl1(f func(interface{}, interface{}) interface{}, l list) interface{} {
+func Foldr(f func(interface{}, interface{}) interface{}, val interface{}, l List) interface{} {
+	if IsEmpty(l) {
+		return val
+	}
+	hd, tl := HdTail(l)
+	return f(Foldr(f, val, tl), hd)
+}
+
+func Foldl1(f func(interface{}, interface{}) interface{}, l List) interface{} {
 	hd, tl := HdTail(l)
 	return Foldl(f, hd, tl)
 }
 
-func Index(idx uint, l list) interface{} {
+func Index(idx uint, l List) interface{} {
 	for cur := uint(0); cur < idx; cur++ {
 		if IsEmpty(l) {
 			return Mzero()
@@ -132,9 +140,28 @@ func Index(idx uint, l list) interface{} {
 	return Head(l)
 }
 
-func Reverse(l list) list {
+func Reverse(l List) List {
 	foldFunc := func(carry, elem interface{}) interface{} {
 		return Cons(elem, carry)
 	}
-	return Foldl(foldFunc, Mzero(), l).(list)
+	return Foldl(foldFunc, Mzero(), l).(List)
+}
+
+func Append(i interface{}, l List) List {
+	return Reverse(Cons(i, Reverse(l)))
+}
+
+func Concat(back, front List) List {
+	foldFunc := func(carry, elem interface{}) interface{} {
+		return Cons(elem, carry)
+	}
+	return Foldr(foldFunc, front, back).(List)
+}
+
+func New(elems ...interface{}) List {
+	l := Mzero()
+	for _, elem := range elems {
+		l = Cons(elem, l)
+	}
+	return Reverse(l)
 }
