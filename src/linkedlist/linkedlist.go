@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type unit struct{}
 
@@ -16,34 +19,52 @@ func mzero() list {
 }
 
 func mreturn(i interface{}) list {
-	return cons(i, unit{})
+	return mreturnf(func() interface{} { return i })
 }
 
 func cons(i interface{}, l list) list {
-	return [2]interface{}{i, func() list { return l }}
+	return consf(func() interface{} { return i }, l)
+}
+
+func consf(f func() interface{}, l list) list {
+	if l == nil {
+		l = mzero()
+	}
+	return [2]interface{}{f, func() list { return l }}
+}
+
+func mreturnf(f func() interface{}) list {
+	return consf(f, mzero())
 }
 
 func head(l list) interface{} {
+	if l == nil {
+		l = mzero()
+	}
 	if _, ok := l.(unit); ok {
 		return unit{}
 	}
-	return l.([2]interface{})[0]
+	lf := l.([2]interface{})[0].(func() interface{})
+	return lf()
 }
 
 func next(l list) list {
+	if l == nil {
+		l = mzero()
+	}
 	if _, ok := l.(uint); ok {
 		return unit{}
 	}
 	ll := l.([2]interface{})
-	if _, ok := ll[1].(unit); ok {
-		return unit{}
-	}
 	f := ll[1].(func() list)
 	return f()
 }
 
 func end(l list) bool {
-	_, ok := l.(uint)
+	if l == nil {
+		l = mzero()
+	}
+	_, ok := l.(unit)
 	if ok {
 		return true
 	}
@@ -55,7 +76,6 @@ func end(l list) bool {
 }
 
 func listmap(f func(interface{}) interface{}, l list) list {
-
 	newList := mzero()
 	for !end(l) {
 		hd := head(l)
@@ -65,15 +85,24 @@ func listmap(f func(interface{}) interface{}, l list) list {
 	return newList
 }
 
-func main() {
-	f := func(i interface{}) interface{} {
-		n := i.(int)
-		fmt.Println(n)
-		return n + 1
+func listmapM(f func(interface{}), l list) {
+	adapter := func(i interface{}) interface{} {
+		f(i)
+		return nil
 	}
-	l := mzero()
-	l = cons(0, l)
-	l = cons(1, l)
-	l = cons(2, l)
-	listmap(f, l)
+	listmap(adapter, l)
+}
+
+func main() {
+	f := func(i interface{}) {
+		fmt.Println(i)
+	}
+
+	slowValue := func() interface{} {
+		time.Sleep(5 * time.Second)
+		return 1
+	}
+
+	l := cons(3, cons(2, consf(slowValue, mreturn(0))))
+	listmapM(f, l)
 }
