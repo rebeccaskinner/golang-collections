@@ -76,13 +76,16 @@ func end(l list) bool {
 }
 
 func listmap(f func(interface{}) interface{}, l list) list {
-	newList := mzero()
-	for !end(l) {
-		hd := head(l)
-		l = next(l)
-		newList = cons(f(hd), newList)
+	if end(l) {
+		return mzero()
 	}
-	return newList
+	elem := l.([2]interface{})
+	valFunc := elem[0].(func() interface{})
+	next := elem[1].(func() list)
+	mapperFunc := func() interface{} {
+		return f(valFunc())
+	}
+	return consf(mapperFunc, listmap(f, next()))
 }
 
 func listmapM(f func(interface{}), l list) {
@@ -93,9 +96,17 @@ func listmapM(f func(interface{}), l list) {
 	listmap(adapter, l)
 }
 
+func seq(l list) {
+	for !end(l) {
+		head(l)
+		l = next(l)
+	}
+}
+
 func main() {
-	f := func(i interface{}) {
+	f := func(i interface{}) interface{} {
 		fmt.Println(i)
+		return nil
 	}
 
 	slowValue := func() interface{} {
@@ -104,5 +115,6 @@ func main() {
 	}
 
 	l := cons(3, cons(2, consf(slowValue, mreturn(0))))
-	listmapM(f, l)
+	l = listmap(f, l)
+	seq(l)
 }
